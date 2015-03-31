@@ -8,8 +8,7 @@
 
 - Necessário a criação de um arquivo .pem para autenticar-se à máquina controller.
 
-- Instruções:
+## TODO:
 
-# git clone https://github.com/raphapr/rr-neat
-# chmod +x rr-script.sh
-# ./rr-script.sh
+- Melhorar o README;
+- Adicionar configurações ao longo da instalação.
