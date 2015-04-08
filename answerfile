@@ -674,7 +674,7 @@ CONFIG_NEUTRON_ML2_VLAN_RANGES=
 # A comma separated list of <tun_min>:<tun_max> tuples enumerating
 # ranges of GRE tunnel IDs that are available for tenant network
 # allocation. Should be an array with tun_max +1 - tun_min > 1000000
-CONFIG_NEUTRON_ML2_TUNNEL_ID_RANGES=
+CONFIG_NEUTRON_ML2_TUNNEL_ID_RANGES=1:1000
 
 # Multicast group for VXLAN. If unset, disables VXLAN enable sending
 # allocate broadcast traffic to this multicast group. When left
