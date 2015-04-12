@@ -10,7 +10,7 @@
 
 - Configuração e recursos necessários para a reprodução dos experimentos:
 
-- 3x Máquinas virtuais com 4 VCPUS cada, 80gb de disco e 8GB de RAM. (Respectivamente com os hostnames: compute01, compute02, e compute03)
+- 3x Máquinas virtuais com 4 VCPUS cada, 80gb de disco e 8GB de RAM. (Com os hostnames, respectivamente: compute01, compute02, e compute03)
 - 1x Máquina virtual com 2 VCPUS, 40gb de disco e 4GB de RAM. (hostname: controller)
 
 - Necessário a criação de um arquivo .pem para autenticar-se à máquina controller.
