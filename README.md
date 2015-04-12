@@ -1,14 +1,29 @@
-# rr-script
+# rr-script: reproducible research script
 
-- Esse bash script cria um ambiente reproduzível de forma automática, onde é configurado um controller OpenStack e a quantidade de computes desejados através do packstack seguido da instalação do OpenStack Neat.
+- Script de pesquisa reproduzível que cria um ambiente OpenStack com OpenStack Neat de forma automática para reprodução de experimentos futuramente realizados.
 
-- O Script deve ser executado pelo usuário root em uma máquina virtual criada no OpenStack (Havana/IceHouse/Juno) utilizando uma imagem cloud do CentOS 7.
+## Instruções
+
+- O Script deve ser executado pelo usuário root em uma máquina virtual controller criada no OpenStack Juno utilizando uma imagem cloud do CentOS 7.
 
 - Imagem CentOS utilizada: http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-20140929_01.qcow2
 
+- Configuração e recursos necessários para a reprodução dos experimentos:
+
+- 3x Máquinas virtuais com 4 VCPUS cada, 80gb de disco e 8GB de RAM. (Respectivamente com os hostnames: compute01, compute02, e compute03)
+- 1x Máquina virtual com 2 VCPUS, 40gb de disco e 4GB de RAM. (hostname: controller)
+
 - Necessário a criação de um arquivo .pem para autenticar-se à máquina controller.
 
-## TODO:
+##  Modo de uso: no controller, faça:
 
-- Melhorar o README;
-- Adicionar configurações ao longo da instalação.
+- git clone https://github.com/raphapr/rr-neat.git && cd rr-neat
+- Copie o arquivo .pem do controller para a pasta atual e a renomeie para "mycloud.pem"
+- Edite os ips internos dos computes no arquivo rr-neat.sh
+- Execute o script: chmod +x rr-neat.sh && ./rr-neat.sh
+
+## TODO
+
+- Detalhar mais o processo;
+- Descobrir hostnames de máquinas na rede através do nmap e atribuir IP dinamicamente no script;
+- Concluir processo do neat.
