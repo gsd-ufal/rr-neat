@@ -14,19 +14,36 @@ setenforce 0
 sed -i '/SELINUX=enforcing/c\SELINUX=permissive' /etc/selinux/config
 
 #############################################################################################################
+# Pega o IP dos computes de forma dinâmica
+# Estimativa: 15 segundos
+#############################################################################################################
+
+targets=($(arp -a | cut -d "(" -f2,3 | cut -d ")" -f1,3)) # Pega todos os endereços IP da sub-rede e armazena em um array
+
+for i in "${targets[@]}"
+do
+        ssh -i mycloud.pem -q -o "BatchMode=yes" centos@${i} "echo 2>&1" &&
+        output="$(ssh -t -i mycloud.pem centos@${i} "cat /etc/hostname | cut -d "." -f1")" &&
+        if [[ $output == *"compute01"* ]]; then
+                COMPUTE[1]=$i
+        elif [[ $output == *"compute02"* ]]; then
+                COMPUTE[2]=$i
+        elif [[ $output == *"compute03"* ]]; then
+                COMPUTE[3]=$i
+        fi
+done
+
+#############################################################################################################
 # Variáveis
-# TODO: Pegar IP dos computes de forma dinâmica
 #############################################################################################################
 
 # pega o IP interno do controller (eth0)
 CONTROLLER=$(/sbin/ifconfig  | sed -ne $'/127.0.0.1/ ! { s/^[ \t]*inet[ \t]\\{1,99\\}\\(addr:\\)\\{0,1\\}\\([0-9.]*\\)[ \t\/].*$/\\2/p; }')
-# IP's dos compute nodes, precisa ser manualmente.
-COMPUTE[1]=10.0.4.181
-COMPUTE[2]=10.0.4.192
-COMPUTE[3]=10.0.4.183
-# arquivo utilizado pelo packstack, contêm todas as informações de configuração necessária para a instalação do OpenStack
-ANSWERFILE=answerfile
+ANSWERFILE=answerfile # arquivo utilizado pelo packstack, contêm todas as informações de configuração necessária para a instalação do OpenStack
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd ) # diretório de execução do script
+#COMPUTE[1]=10.0.4.181
+#COMPUTE[2]=10.0.4.192
+#COMPUTE[3]=10.0.4.183
 
 #############################################################################################################
 # Controller
@@ -51,8 +68,6 @@ yes | sudo cp -i /home/centos/.ssh/authorized_keys /root/.ssh/authorized_keys
 
 # Reinicia serviço de rede para que todas as configurações entrarem em vigor
 systemctl restart network
-
-# Configura o eth2 de cada compute node
 
 #############################################################################################################
 # Computes
