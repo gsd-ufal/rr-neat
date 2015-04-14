@@ -7,6 +7,15 @@
 #
 
 #############################################################################################################
+# Variáveis
+#############################################################################################################
+
+## pega o IP interno do controller (eth0)
+CONTROLLER=$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ' ' -f 10)
+ANSWERFILE=answerfile # arquivo utilizado pelo packstack, contêm todas as informações de configuração necessária para a instalação do OpenStack
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd ) # diretório de execução do script
+
+#############################################################################################################
 # Configura o SELinux no modo permissivo: permite que o packstack faça uma instalação do OpenStack sem erros.
 #############################################################################################################
 
@@ -18,7 +27,8 @@ sed -i '/SELINUX=enforcing/c\SELINUX=permissive' /etc/selinux/config
 # Estimativa: 15 segundos
 #############################################################################################################
 
-targets=($(arp -a | cut -d "(" -f2,3 | cut -d ")" -f1,3)) # Pega todos os endereços IP da sub-rede e armazena em um array
+ping -c 1 -b 10.0.4.255
+targets=($(arp -a | sed '/eth1/d' | cut -d "(" -f2,3 | cut -d ")" -f1,3)) # Pega todos os endereços IP da sub-rede e armazena em um array
 
 for i in "${targets[@]}"
 do
@@ -33,17 +43,6 @@ do
         fi
 done
 
-#############################################################################################################
-# Variáveis
-#############################################################################################################
-
-# pega o IP interno do controller (eth0)
-CONTROLLER=$(/sbin/ifconfig  | sed -ne $'/127.0.0.1/ ! { s/^[ \t]*inet[ \t]\\{1,99\\}\\(addr:\\)\\{0,1\\}\\([0-9.]*\\)[ \t\/].*$/\\2/p; }')
-ANSWERFILE=answerfile # arquivo utilizado pelo packstack, contêm todas as informações de configuração necessária para a instalação do OpenStack
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd ) # diretório de execução do script
-#COMPUTE[1]=10.0.4.181
-#COMPUTE[2]=10.0.4.192
-#COMPUTE[3]=10.0.4.183
 
 #############################################################################################################
 # Controller
@@ -99,7 +98,7 @@ done
 
 yum update -y
 yum install -y https://rdo.fedorapeople.org/rdo-release.rpm
-yum install -y tmux vim-minimal git openstack-packstack
+yum install -y tmux vim-minimal git openstack-packstack httpd iptables-services
 
 ## Testa se o packstack foi instalado corretamente
 if ! which packstack &> /dev/null; then
@@ -107,23 +106,31 @@ if ! which packstack &> /dev/null; then
     exit 1
 fi
 
+## substituição das variáveis para endereços ips no arquivo answerfile 
+yes | cp -i answerfile-modelo answerfile
+sed -i "s/controllerhost/${CONTROLLER}/" answerfile
+for i in 1 2 3
+do
+       sed -i "s/compute0$i/${COMPUTE[$i]}/" answerfile
+done
+
 # packstack tem problemas em iniciar iptables e httpd, iniciando pelo script
 systemctl enable httpd && systemctl start httpd
 systemctl enable iptables && systemctl start iptables
 
-# Instalando openstack
-# ESTIMATIVA: 20~30min
-packstack --answer-file=$ANSWERFILE
-
-#TODO: Concluir configuração do openstack-neat
-
-#############################################################################################################
-# openstack-neat
-# instalação e configuração
-#############################################################################################################
-
-## neat
+## Instalando openstack
+## ESTIMATIVA: 20~30min
+#packstack --answer-file=$ANSWERFILE
 #
-#cd /root && git clone https://github.com/beloglazov/openstack-neat.git && cd /root/openstack-neat # instala o neat e entra no diretório
-#python setup.py install
-#./all-start
+##TODO: Concluir configuração do openstack-neat
+#
+##############################################################################################################
+## openstack-neat
+## instalação e configuração
+##############################################################################################################
+#
+### neat
+##
+##cd /root && git clone https://github.com/beloglazov/openstack-neat.git && cd /root/openstack-neat # instala o neat e entra no diretório
+##python setup.py install
+##./all-start
