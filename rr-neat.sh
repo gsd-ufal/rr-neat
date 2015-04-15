@@ -12,6 +12,7 @@
 
 ## pega o IP interno do controller (eth0)
 CONTROLLER=$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ' ' -f 10)
+SUBNET=$(echo $CONTROLLER | cut -d '.' -f 1-3)
 ANSWERFILE=answerfile # arquivo utilizado pelo packstack, contêm todas as informações de configuração necessária para a instalação do OpenStack
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd ) # diretório de execução do script
 
@@ -23,12 +24,23 @@ setenforce 0
 sed -i '/SELINUX=enforcing/c\SELINUX=permissive' /etc/selinux/config
 
 #############################################################################################################
-# Pega o IP dos computes de forma dinâmica
-# Estimativa: 15 segundos
+# Atualização do sistema e pacotes necessários
 #############################################################################################################
 
-ping -c 1 -b 10.0.4.255
-targets=($(arp -a | sed '/eth1/d' | cut -d "(" -f2,3 | cut -d ")" -f1,3)) # Pega todos os endereços IP da sub-rede e armazena em um array
+yum update -y
+yum install -y https://rdo.fedorapeople.org/rdo-release.rpm
+yum install -y nmap tmux vim-minimal git openstack-packstack httpd iptables-services
+
+#############################################################################################################
+# Pega o IP dos computes de forma dinâmica
+# Estimativa: 10 segundos
+#############################################################################################################
+
+nmap -sP ${SUBNET}.*
+targets=($(nmap -sP ${SUBNET}.* | grep ^Nmap | awk '{print $5;}' | grep ^[0-9].*)) # Pega todos os endereços IP da sub-rede e armazena em um array
+
+#ping -c 1 -b ${SUBNET}.255
+#targets=($(arp -a | sed '/eth1/d' | cut -d "(" -f2,3 | cut -d ")" -f1,3)) # Pega todos os endereços IP da sub-rede e armazena em um array
 
 for i in "${targets[@]}"
 do
@@ -51,6 +63,9 @@ done
 
 # As hostkeys serão adicionadas ao .ssh/known_hosts sem prompt
 sed -i '/StrictHostKeyChecking/c\StrictHostKeyChecking no' /etc/ssh/ssh_config
+
+# cria chave ssh para packstack
+yes | ssh-keygen -q -t rsa -N "" -f /root/.ssh/neatkey
 
 # Configura a segunda interface de rede (eth2) do controller destinada à comunicação com os computes (interface de tunelamento).
 cp ifcfg-eth1 /etc/sysconfig/network-scripts/
@@ -82,10 +97,11 @@ sudo cp /home/centos/ifcfg-eth1 /etc/sysconfig/network-scripts/
 sudo sed -i "s/CHANGEIP/10.0.10.1${i}/" /etc/sysconfig/network-scripts/ifcfg-eth1
 if ! grep -q 'compute01' /etc/hosts; then
 	sudo sed -i '\$a# controller\n10.0.10.10	controller\n\n# compute01\n10.0.10.11	compute01\n\n# compute02\n10.0.10.12	compute02\n\n# compute03\n10.0.10.13	compute03' /etc/hosts
-yes | sudo cp -i /home/centos/.ssh/authorized_keys /root/.ssh/authorized_keys
 fi
+yes | sudo cp -i /home/centos/.ssh/authorized_keys /root/.ssh/authorized_keys
 sudo systemctl restart network
 "
+   cat /root/.ssh/neatkey.pub | ssh -i mycloud.pem root@${COMPUTE[$i]} "cat - >> ~/.ssh/authorized_keys"
 done
 
 #############################################################################################################
@@ -93,12 +109,6 @@ done
 # O script utiliza o packstack para a instalação automatizada do OpenStack. 
 # O answerfile não inclui o Cinder e Heat, pois não há necessidades desses módulos para o experimento.
 #############################################################################################################
-
-# atualiza e instala packstack junto com alguns outros pacotes úteis
-
-yum update -y
-yum install -y https://rdo.fedorapeople.org/rdo-release.rpm
-yum install -y tmux vim-minimal git openstack-packstack httpd iptables-services
 
 ## Testa se o packstack foi instalado corretamente
 if ! which packstack &> /dev/null; then
