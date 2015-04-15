@@ -19,11 +19,9 @@
 
 - git clone https://github.com/raphapr/rr-neat.git && cd rr-neat
 - Copie o arquivo .pem do controller para a pasta atual e a renomeie para "mycloud.pem"
-- Edite os ips internos dos computes no arquivo rr-neat.sh
 - Execute o script: chmod +x rr-neat.sh && ./rr-neat.sh
 
 ## TODO
 
 - Detalhar mais o processo;
-- Descobrir hostnames de máquinas na rede através do nmap e atribuir IP dinamicamente no script;
 - Concluir processo do neat.

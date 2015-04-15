@@ -29,7 +29,7 @@ sed -i '/SELINUX=enforcing/c\SELINUX=permissive' /etc/selinux/config
 
 yum update -y
 yum install -y https://rdo.fedorapeople.org/rdo-release.rpm
-yum install -y nmap tmux vim-minimal git openstack-packstack httpd iptables-services
+yum install -y nmap tmux vim git openstack-packstack httpd iptables-services
 
 #############################################################################################################
 # Pega o IP dos computes de forma dinâmica
