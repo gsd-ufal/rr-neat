@@ -6,6 +6,12 @@
 # Autor     : Raphael P. Ribeiro <raphaelpr01@gmail.com>
 #
 
+# Checa se o script está sendo executado por usuário root
+if [ "$(id -u)" != "0" ]; then
+   echo "This script must be run as root!" 1>&2
+   exit 1
+fi
+
 #############################################################################################################
 # Variáveis
 #############################################################################################################
@@ -107,6 +113,18 @@ sudo systemctl restart network
 "
    cat /root/.ssh/id_rsa.pub | ssh -i mycloud.pem root@${COMPUTE[$i]} "cat - >> ~/.ssh/authorized_keys"
 done
+
+if ! grep -q 'REBOOTED' /etc/bashrc; then
+	echo "REBOOTED # created by rr-neat script" >> /etc/bashrc
+	echo "### Rebooting compute01"
+	ssh root@compute01 "reboot"
+	echo "### Rebooting compute02"
+	ssh root@compute02 "reboot"
+	echo "### Rebooting compute03"
+	ssh root@compute03 "reboot"
+	echo "### Rebooting controller"
+	reboot
+fi
 
 #############################################################################################################
 # packstack
