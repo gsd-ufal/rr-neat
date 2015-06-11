@@ -12,6 +12,9 @@
 
 ## pega o IP interno do controller (eth0)
 CONTROLLER=$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ' ' -f 10)
+COMPUTE[1]=<COMPUTE01_IP>
+COMPUTE[2]=<COMPUTE02_IP>
+COMPUTE[3]=<COMPUTE03_IP>
 SUBNET=$(echo $CONTROLLER | cut -d '.' -f 1-3)
 ANSWERFILE=answerfile # arquivo utilizado pelo packstack, contêm todas as informações de configuração necessária para a instalação do OpenStack
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd ) # diretório de execução do script
@@ -31,30 +34,30 @@ yum update -y
 yum install -y https://rdo.fedorapeople.org/rdo-release.rpm
 yum install -y nmap tmux vim git openstack-packstack httpd iptables-services
 
+# Não está funcionando
 #############################################################################################################
 # Pega o IP dos computes de forma dinâmica
 # Estimativa: 10 segundos
 #############################################################################################################
 
-nmap -sP ${SUBNET}.*
-targets=($(nmap -sP ${SUBNET}.* | grep ^Nmap | awk '{print $5;}' | grep ^[0-9].*)) # Pega todos os endereços IP da sub-rede e armazena em um array
-
-#ping -c 1 -b ${SUBNET}.255
-#targets=($(arp -a | sed '/eth1/d' | cut -d "(" -f2,3 | cut -d ")" -f1,3)) # Pega todos os endereços IP da sub-rede e armazena em um array
-
-for i in "${targets[@]}"
-do
-        ssh -i mycloud.pem -q -o "BatchMode=yes" centos@${i} "echo 2>&1" &&
-        output="$(ssh -t -i mycloud.pem centos@${i} "cat /etc/hostname | cut -d "." -f1")" &&
-        if [[ $output == *"compute01"* ]]; then
-                COMPUTE[1]=$i
-        elif [[ $output == *"compute02"* ]]; then
-                COMPUTE[2]=$i
-        elif [[ $output == *"compute03"* ]]; then
-                COMPUTE[3]=$i
-        fi
-done
-
+#nmap -sP ${SUBNET}.*
+#targets=($(nmap -sP ${SUBNET}.* | grep ^Nmap | awk '{print $5;}' | grep ^[0-9].*)) # Pega todos os endereços IP da sub-rede e armazena em um array
+#
+##ping -c 1 -b ${SUBNET}.255
+##targets=($(arp -a | sed '/eth1/d' | cut -d "(" -f2,3 | cut -d ")" -f1,3)) # Pega todos os endereços IP da sub-rede e armazena em um array
+#
+#for i in "${targets[@]}"
+#do
+#        ssh -i mycloud.pem -q -o "BatchMode=yes" centos@${i} "echo 2>&1" &&
+#        output="$(ssh -t -i mycloud.pem centos@${i} "cat /etc/hostname | cut -d "." -f1")" &&
+#        if [[ $output == *"compute01"* ]]; then
+#                COMPUTE[1]=$i
+#        elif [[ $output == *"compute02"* ]]; then
+#                COMPUTE[2]=$i
+#        elif [[ $output == *"compute03"* ]]; then
+#                COMPUTE[3]=$i
+#        fi
+#done
 
 #############################################################################################################
 # Controller
@@ -65,7 +68,7 @@ done
 sed -i '/StrictHostKeyChecking/c\StrictHostKeyChecking no' /etc/ssh/ssh_config
 
 # cria chave ssh para packstack
-yes | ssh-keygen -q -t rsa -N "" -f /root/.ssh/neatkey
+yes | ssh-keygen -q -t rsa -N "" -f /root/.ssh/id_rsa
 
 # Configura a segunda interface de rede (eth2) do controller destinada à comunicação com os computes (interface de tunelamento).
 cp ifcfg-eth1 /etc/sysconfig/network-scripts/
@@ -79,6 +82,7 @@ fi
 # Permite o acesso ssh através do usuário root
 # Não aconselhável em sistema de produção, porém como é uma reprodução de experimentos, não tem problemas.
 yes | sudo cp -i /home/centos/.ssh/authorized_keys /root/.ssh/authorized_keys
+cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
 
 # Reinicia serviço de rede para que todas as configurações entrarem em vigor
 systemctl restart network
@@ -101,7 +105,7 @@ fi
 yes | sudo cp -i /home/centos/.ssh/authorized_keys /root/.ssh/authorized_keys
 sudo systemctl restart network
 "
-   cat /root/.ssh/neatkey.pub | ssh -i mycloud.pem root@${COMPUTE[$i]} "cat - >> ~/.ssh/authorized_keys"
+   cat /root/.ssh/id_rsa.pub | ssh -i mycloud.pem root@${COMPUTE[$i]} "cat - >> ~/.ssh/authorized_keys"
 done
 
 #############################################################################################################
@@ -130,7 +134,7 @@ systemctl enable iptables && systemctl start iptables
 
 ## Instalando openstack
 ## ESTIMATIVA: 20~30min
-#packstack --answer-file=$ANSWERFILE
+packstack --answer-file=$ANSWERFILE
 #
 ##TODO: Concluir configuração do openstack-neat
 #
@@ -141,6 +145,5 @@ systemctl enable iptables && systemctl start iptables
 #
 ### neat
 ##
-##cd /root && git clone https://github.com/beloglazov/openstack-neat.git && cd /root/openstack-neat # instala o neat e entra no diretório
-##python setup.py install
-##./all-start
+#cd /root && git clone https://github.com/beloglazov/openstack-neat.git
+#cd /root/openstack-neat && python setup.py install & ./all-start.sh # instala o neat e entra no diretório
