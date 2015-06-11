@@ -159,9 +159,35 @@ systemctl enable iptables && systemctl start iptables
 
 packstack --answer-file=$ANSWERFILE
 
-## alterações packstack pós instalação
+## Alterações packstack pós instalação
 
-#TODO
+source /root/keystonerc_admin
+
+neutron net-create ext-net --router:external
+neutron subnet-create --disable-dhcp ext-net 172.12.12.0/24 --gateway=172.12.12.1
+
+source /root/keystonerc_demo
+
+neutron net-create int-net
+neutron subnet-create --name int-subnet --dns-nameserver 8.8.8.8 int-net 10.1.1.0/24
+
+neutron router-create extrouter
+neutron router-gateway-set extrouter ext-net
+neutron router-interface-add extrouter int-subnet
+
+# Criando chave publica para o Nova
+ssh-keygen -t rsa -b 2048 -N '' -f /root/.ssh/demokey
+nova keypair-add --pub-key /root/.ssh/demokey.pub demokey
+
+# Abrindo porta para ssh
+neutron security-group-rule-create --protocol icmp default
+neutron security-group-rule-create --protocol tcp --port-range-min 22 --port-range-max 22 default
+
+#ip addr add 172.12.12.1/24 dev br-ex
+#iptables -t nat -I POSTROUTING 1 -s 172.12.12.0/24 -j MASQUERADE
+
+#nova floating-ip-create ext-net
+#nova add-floating-ip cirros <IP>
 
 ##TODO: Concluir configuração do openstack-neat
 #
@@ -169,8 +195,13 @@ packstack --answer-file=$ANSWERFILE
 ## openstack-neat
 ## instalação e configuração
 ##############################################################################################################
-#
-### neat
-##
+
+pip install -e git+git://github.com/rlgomes/contracts.git#egg=contracts
 cd /root && git clone https://github.com/beloglazov/openstack-neat.git
-cd /root/openstack-neat && python setup.py install & ./all-start.sh # instala o neat e entra no diretório
+cd /root/openstack-neat && python setup.py install
+
+for i in 1 2 3
+do
+	scp -r /root/openstack-neat root@${COMPUTE[$i]}:~
+	ssh root@${COMPUTE[$i]} "cd /root/openstack-neat && python setup.py install"
+done
