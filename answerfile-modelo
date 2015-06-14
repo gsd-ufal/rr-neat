@@ -82,15 +82,15 @@ CONFIG_DEBUG_MODE=n
 
 # The IP address of the server on which to install OpenStack services
 # specific to controller role such as API servers, Horizon, etc.
-CONFIG_CONTROLLER_HOST=controllerhost
+CONFIG_CONTROLLER_HOST=10.0.10.10
 
 # The list of IP addresses of the server on which to install the Nova
 # compute service
-CONFIG_COMPUTE_HOSTS=compute01,compute02,compute03
+CONFIG_COMPUTE_HOSTS=10.0.10.11,10.0.10.12,10.0.10.13
 
 # The list of IP addresses of the server on which to install the
 # network service such as Nova network or Neutron
-CONFIG_NETWORK_HOSTS=controllerhost
+CONFIG_NETWORK_HOSTS=10.0.10.10
 
 # Set to 'y' if you want to use VMware vCenter as hypervisor and
 # storage. Otherwise set to 'n'.
@@ -192,7 +192,7 @@ CONFIG_SATELLITE_PROXY_PW=
 CONFIG_AMQP_BACKEND=rabbitmq
 
 # The IP address of the server on which to install the AMQP service
-CONFIG_AMQP_HOST=controllerhost
+CONFIG_AMQP_HOST=10.0.10.10
 
 # Enable SSL for the AMQP service
 CONFIG_AMQP_ENABLE_SSL=n
@@ -229,7 +229,7 @@ CONFIG_AMQP_AUTH_PASSWORD=noitosfera
 
 # The IP address of the server on which to install MariaDB or IP
 # address of DB server to use if MariaDB installation was not selected
-CONFIG_MARIADB_HOST=controllerhost
+CONFIG_MARIADB_HOST=10.0.10.10
 
 # Username for the MariaDB admin user
 CONFIG_MARIADB_USER=root
@@ -824,11 +824,11 @@ CONFIG_CEILOMETER_KS_PW=noitosfera
 CONFIG_CEILOMETER_COORDINATION_BACKEND=redis
 
 # The IP address of the server on which to install MongoDB
-CONFIG_MONGODB_HOST=controllerhost
+CONFIG_MONGODB_HOST=10.0.10.10
 
 # The IP address of the server on which to install redis master
 # server
-CONFIG_REDIS_MASTER_HOST=controllerhost
+CONFIG_REDIS_MASTER_HOST=10.0.10.10
 
 # The port on which the redis server(s) listens
 CONFIG_REDIS_PORT=6379

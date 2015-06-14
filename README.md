@@ -19,9 +19,5 @@
 
 - git clone https://github.com/raphapr/rr-neat.git && cd rr-neat
 - Copie o arquivo .pem do controller para a pasta atual e a renomeie para "mycloud.pem"
+- Edite os endereços IPs dos respectivos compute nodes no arquivo rr-neat.sh
 - Execute o script: chmod +x rr-neat.sh && ./rr-neat.sh
-
-## TODO
-
-- Detalhar mais o processo;
-- Concluir processo do neat.
