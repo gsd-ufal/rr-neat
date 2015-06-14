@@ -12,6 +12,11 @@ if [ "$(id -u)" != "0" ]; then
    exit 1
 fi
 
+if [ ! -e "mycloud.pem" ]; then
+   echo "ERROR: File 'mycloud.pem' doesn't exist!" 1>&2
+   exit 1
+fi
+
 #############################################################################################################
 # Variáveis
 #############################################################################################################
@@ -160,10 +165,11 @@ EOF
 #############################################################################################################
 # Main
 #############################################################################################################
+    
+# preconfigure to packstack
+preconfigure
 
 if ! grep -q 'REBOOTED' /etc/bashrc; then # se não reiniciou, reinicia todos os nós, se reiniciou instala packstack
-    # preconfigure to packstack
-    preconfigure
 	echo "REBOOTED # created by rr-neat script" >> /etc/bashrc
 	echo "### Rebooting compute01"
 	ssh root@compute01 "reboot"
