@@ -38,15 +38,8 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd ) # diretório de execução
 preconfigure() {
 
     # Configura o SELinux no modo permissivo: permite que o packstack faça uma instalação do OpenStack sem erros.
-
     setenforce 0
     sed -i '/SELINUX=enforcing/c\SELINUX=permissive' /etc/selinux/config
-
-    # Atualização do sistema e pacotes necessários
-
-    yum update -y
-    yum install -y https://rdo.fedorapeople.org/rdo-release.rpm
-    yum install -y nmap tmux vim git openstack-packstack httpd iptables-services numpy
 
     # Controller
     # >>> Configuração do controller
@@ -91,6 +84,13 @@ preconfigure() {
     "
        cat /root/.ssh/id_rsa.pub | ssh -i mycloud.pem root@${COMPUTE[$i]} "cat - >> ~/.ssh/authorized_keys"
     done
+
+    # Atualização dos sistemas e pacotes necessários
+    yum update -y && yum install -y https://rdo.fedorapeople.org/rdo-release.rpm && yum install -y tmux vim git openstack-packstack httpd iptables-services &
+    for i in 1 2 3; do                                                                                                                                                                        
+        ssh -t root@${COMPUTE[$i]} "yum update -y" &
+    done
+    wait
 
 }
 
@@ -159,6 +159,13 @@ EOF
     scp -r /root/openstack-neat root@${COMPUTE[$i]}:~
     ssh root@${COMPUTE[$i]} "cd /root/openstack-neat && python setup.py install"
     done
+    
+    # openstack-neat deps
+    bash /root/openstack-neat/setup/deps-centos.sh &
+    for i in 1 2 3; do                                                                                                                                                                        
+        ssh -t root@${COMPUTE[$i]} "bash /root/openstack-neat/setup/deps-centos.sh" &
+    done
+    wait
 
 }
 
