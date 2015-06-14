@@ -169,7 +169,7 @@ EOF
 # preconfigure to packstack
 preconfigure
 
-if ! grep -q 'REBOOTED' /etc/bashrc; then # se não reiniciou, reinicia todos os nós, se reiniciou instala packstack
+if ! grep -q '#REBOOTED' /etc/bashrc; then # se não reiniciou, reinicia todos os nós, se reiniciou instala packstack
 	echo "REBOOTED # created by rr-neat script" >> /etc/bashrc
 	echo "### Rebooting compute01"
 	ssh root@compute01 "reboot"
