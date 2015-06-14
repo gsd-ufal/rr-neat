@@ -104,6 +104,11 @@ packstack_install()
 {
 
     yes | cp -i answerfile-modelo answerfile
+    sed -i "s/controllerhost/${CONTROLLER}/" answerfile
+    for i in 1 2 3
+    do
+       sed -i "s/compute0$i/${COMPUTE[$i]}/" answerfile
+    done
 
     # packstack tem problemas em iniciar iptables e httpd, iniciando pelo script
     systemctl enable httpd && systemctl start httpd
