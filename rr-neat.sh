@@ -63,7 +63,7 @@ preconfigure() {
 
     # Se o /etc/hosts já foi modificado, não adiciona os demais hosts
     if ! grep -q "compute01" /etc/hosts; then
-        sed -i "\$a# controller\n10.0.10.10	controller\n\n# compute01\n10.0.10.11	compute01\n\n# compute02\n10.0.10.12	compute02\n\n# compute03\n10.0.10.13	compute03" /etc/hosts
+        sed -i "\$a# controller\n$CONTROLLER	controller\n\n# compute01\n${COMPUTE[1]}    compute01\n\n# compute02\n${COMPUTE[2]}	    compute02\n\n# compute03\n${COMPUTE[3]}	    compute03" /etc/hosts
     fi
 
     # Permite o acesso ssh através do usuário root
@@ -84,7 +84,7 @@ preconfigure() {
     sudo cp /home/centos/ifcfg-eth1 /etc/sysconfig/network-scripts/
     sudo sed -i "s/CHANGEIP/10.0.10.1${i}/" /etc/sysconfig/network-scripts/ifcfg-eth1
     if ! grep -q 'compute01' /etc/hosts; then
-        sudo sed -i '\$a# controller\n10.0.10.10	controller\n\n# compute01\n10.0.10.11	compute01\n\n# compute02\n10.0.10.12	compute02\n\n# compute03\n10.0.10.13	compute03' /etc/hosts
+        sudo sed -i '\$a# controller\n$CONTROLLER	controller\n\n# compute01\n${COMPUTE[1]}	compute01\n\n# compute02\n${COMPUTE[2]}	compute02\n\n# compute03\n${COMPUTE[3]}	compute03' /etc/hosts
     fi
     yes | sudo cp -i /home/centos/.ssh/authorized_keys /root/.ssh/authorized_keys
     sudo systemctl restart network
@@ -104,11 +104,6 @@ packstack_install()
 {
 
     yes | cp -i answerfile-modelo answerfile
-    sed -i "s/controllerhost/${CONTROLLER}/" answerfile
-    for i in 1 2 3
-    do
-       sed -i "s/compute0$i/${COMPUTE[$i]}/" answerfile
-    done
 
     # packstack tem problemas em iniciar iptables e httpd, iniciando pelo script
     systemctl enable httpd && systemctl start httpd
