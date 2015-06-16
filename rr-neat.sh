@@ -40,6 +40,11 @@ preconfigure() {
     # Configura o SELinux no modo permissivo: permite que o packstack faça uma instalação do OpenStack sem erros.
     setenforce 0
     sed -i '/SELINUX=enforcing/c\SELINUX=permissive' /etc/selinux/config
+    
+    # Atualização dos sistemas e pacotes necessários
+    yum update -y
+    yum install -y https://rdo.fedorapeople.org/rdo-release.rpm
+    yum install -y tmux vim git openstack-packstack httpd iptables-services libvirt ntfs-utils nfs4-acl-tools
 
     # Controller
     # >>> Configuração do controller
@@ -85,13 +90,6 @@ preconfigure() {
        cat /root/.ssh/id_rsa.pub | ssh -i mycloud.pem root@${COMPUTE[$i]} "cat - >> ~/.ssh/authorized_keys"
     done
 
-    # Atualização dos sistemas e pacotes necessários
-    yum update -y && yum install -y https://rdo.fedorapeople.org/rdo-release.rpm && yum install -y tmux vim git openstack-packstack httpd iptables-services libvirt ntfs-utils nfs4-acl-tools p &
-    for i in 1 2 3; do                                                                                                                                                                        
-        ssh -t root@${COMPUTE[$i]} "yum update -y" &
-    done
-    wait
-
 }
 
 #############################################################################################################
@@ -128,8 +126,6 @@ packstack_install()
     nova keypair-add --pub-key /root/.ssh/demokey.pub demokey
 
     # Habilitando live migration
-
-    yum -y install libvirt ntfs-utils nfs4-acl-tools portmap
 
     echo "/var/lib/nova/instances 10.0.10.0/24(rw,sync,fsid=0,no_root_squash)" > /etc/exports
 
