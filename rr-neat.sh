@@ -86,7 +86,7 @@ preconfigure() {
     done
 
     # Atualização dos sistemas e pacotes necessários
-    yum update -y && yum install -y https://rdo.fedorapeople.org/rdo-release.rpm && yum install -y tmux vim git openstack-packstack httpd iptables-services &
+    yum update -y && yum install -y https://rdo.fedorapeople.org/rdo-release.rpm && yum install -y tmux vim git openstack-packstack httpd iptables-services libvirt ntfs-utils nfs4-acl-tools p &
     for i in 1 2 3; do                                                                                                                                                                        
         ssh -t root@${COMPUTE[$i]} "yum update -y" &
     done
