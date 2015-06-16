@@ -6,7 +6,7 @@
 
 - O Script deve ser executado pelo usuário root em uma máquina virtual controller criada no OpenStack Juno utilizando uma imagem cloud do CentOS 7.
 
-- Imagem CentOS utilizada: http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-20140929_01.qcow2
+- Imagem CentOS utilizada: http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-1503.qcow2
 
 - Configuração e recursos necessários para a reprodução dos experimentos:
 
