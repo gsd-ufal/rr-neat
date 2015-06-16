@@ -77,8 +77,7 @@ preconfigure() {
     sudo cp /home/centos/ifcfg-eth1 /etc/sysconfig/network-scripts/
     sudo sed -i "s/CHANGEIP/10.0.10.1${i}/" /etc/sysconfig/network-scripts/ifcfg-eth1
     if ! grep -q 'compute01' /etc/hosts; then
-        sed -i '\$a# controller\n$CONTROLLER      controller\n\n# compute01\n${COMPUTE[1]}    compute01\n${COMPUTE[1]}    compute01.novalocal\n\n# compute02\n${COMPUTE[2]}     compute02\n${COMPUTE[2]}     compute02.novalocal\n\n# compute03\n${COMPUTE[3]}     compute03\n${COMPUTE[3]}     compute03.novalocal' /etc/hosts
-    fi
+        sudo sed -i '\$a# controller\n$CONTROLLER      controller\n\n# compute01\n${COMPUTE[1]}    compute01\n${COMPUTE[1]}    compute01.novalocal\n\n# compute02\n${COMPUTE[2]}     compute02\n${COMPUTE[2]}     compute02.novalocal\n\n# compute03\n${COMPUTE[3]}     compute03\n${COMPUTE[3]}     compute03.novalocal' /etc/hosts
     fi
     yes | sudo cp -i /home/centos/.ssh/authorized_keys /root/.ssh/authorized_keys
     sudo systemctl restart network
