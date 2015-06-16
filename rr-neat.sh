@@ -56,7 +56,7 @@ preconfigure() {
 
     # Se o /etc/hosts já foi modificado, não adiciona os demais hosts
     if ! grep -q "compute01" /etc/hosts; then
-        sed -i "\$a# controller\n$CONTROLLER	controller\n\n# compute01\n${COMPUTE[1]}    compute01\n\n# compute02\n${COMPUTE[2]}	    compute02\n\n# compute03\n${COMPUTE[3]}	    compute03" /etc/hosts
+        sed -i "\$a# controller\n$CONTROLLER      controller\n\n# compute01\n${COMPUTE[1]}    compute01\n${COMPUTE[1]}    compute01.novalocal\n\n# compute02\n${COMPUTE[2]}     compute02\n${COMPUTE[2]}     compute02.novalocal\n\n# compute03\n${COMPUTE[3]}     compute03\n${COMPUTE[3]}     compute03.novalocal" /etc/hosts
     fi
 
     # Permite o acesso ssh através do usuário root
@@ -77,7 +77,8 @@ preconfigure() {
     sudo cp /home/centos/ifcfg-eth1 /etc/sysconfig/network-scripts/
     sudo sed -i "s/CHANGEIP/10.0.10.1${i}/" /etc/sysconfig/network-scripts/ifcfg-eth1
     if ! grep -q 'compute01' /etc/hosts; then
-        sudo sed -i '\$a# controller\n$CONTROLLER	controller\n\n# compute01\n${COMPUTE[1]}	compute01\n\n# compute02\n${COMPUTE[2]}	compute02\n\n# compute03\n${COMPUTE[3]}	compute03' /etc/hosts
+        sed -i '\$a# controller\n$CONTROLLER      controller\n\n# compute01\n${COMPUTE[1]}    compute01\n${COMPUTE[1]}    compute01.novalocal\n\n# compute02\n${COMPUTE[2]}     compute02\n${COMPUTE[2]}     compute02.novalocal\n\n# compute03\n${COMPUTE[3]}     compute03\n${COMPUTE[3]}     compute03.novalocal' /etc/hosts
+    fi
     fi
     yes | sudo cp -i /home/centos/.ssh/authorized_keys /root/.ssh/authorized_keys
     sudo systemctl restart network
@@ -122,9 +123,25 @@ packstack_install()
     ssh-keygen -t rsa -b 2048 -N '' -f /root/.ssh/demokey
     nova keypair-add --pub-key /root/.ssh/demokey.pub demokey
 
-    # Abrindo porta para ssh
-    neutron security-group-rule-create --protocol icmp default
-    neutron security-group-rule-create --protocol tcp --port-range-min 22 --port-range-max 22 default
+    # Habilitando live migration
+
+    yum -y install libvirt ntfs-utils nfs4-acl-tools portmap
+
+    echo "/var/lib/nova/instances 10.0.10.0/24(rw,sync,fsid=0,no_root_squash)" > /etc/exports
+
+    systemctl enable nfs-server && systemctl start nfs-server
+    systemctl disable iptables && systemctl stop iptables
+
+    for i in 1 2 3
+    do
+        ssh root@${COMPUTE[$i]} "
+        chmod o+x /var/lib/nova/instances
+        echo "controller:/ /var/lib/nova/instances nfs4 defaults 0 0" >> /etc/fstab
+        sed -i '/live_migration_flag/c\live_migration_flag=VIR_MIGRATE_UNDEFINE_SOURCE, VIR_MIGRATE_PEER2PEER, VIR_MIGRATE_LIVE, VIR_MIGRATE_TUNNELLED' /etc/nova/nova.conf
+        "
+    done
+
+    systemctl enable libvirtd && systemctl start libvirtd
 
 }
 
@@ -156,13 +173,13 @@ EOF
     # instalando neat em todos os computes
     for i in 1 2 3
     do
-    scp -r /root/openstack-neat root@${COMPUTE[$i]}:~
-    ssh root@${COMPUTE[$i]} "cd /root/openstack-neat && python setup.py install"
+        scp -r /root/openstack-neat root@${COMPUTE[$i]}:~
+        ssh root@${COMPUTE[$i]} "cd /root/openstack-neat && python setup.py install"
     done
     
     # openstack-neat deps
     bash /root/openstack-neat/setup/deps-centos.sh &
-    for i in 1 2 3; do                                                                                                                                                                        
+    for i in 1 2 3; do                               
         ssh -t root@${COMPUTE[$i]} "bash /root/openstack-neat/setup/deps-centos.sh" &
     done
     wait
