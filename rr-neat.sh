@@ -104,6 +104,11 @@ packstack_install()
 {
 
     yes | cp -i answerfile-modelo answerfile
+    sed -i "s/controllerhost/${CONTROLLER}/" answerfile
+    for i in 1 2 3
+    do
+       sed -i "s/compute0$i/${COMPUTE[$i]}/" answerfile
+    done
 
     # packstack tem problemas em iniciar iptables e httpd, iniciando pelo script
     systemctl enable httpd && systemctl start httpd
@@ -189,20 +194,6 @@ EOF
 # Main
 #############################################################################################################
     
-# preconfigure to packstack
 preconfigure
-
-if ! grep -q '#REBOOTED' /etc/bashrc; then # se não reiniciou, reinicia todos os nós, se reiniciou instala packstack
-	echo "REBOOTED # created by rr-neat script" >> /etc/bashrc
-	echo "### Rebooting compute01"
-	ssh root@compute01 "reboot"
-	echo "### Rebooting compute02"
-	ssh root@compute02 "reboot"
-	echo "### Rebooting compute03"
-	ssh root@compute03 "reboot"
-	echo "### Rebooting controller"
-	reboot
-fi
-
 packstack_install
 neat_install
