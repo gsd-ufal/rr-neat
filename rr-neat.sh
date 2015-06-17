@@ -86,7 +86,7 @@ preconfigure() {
     done
 
     # Atualização dos sistemas e pacotes necessários
-    yum update -y && yum install -y https://rdo.fedorapeople.org/rdo-release.rpm && yum install -y tmux vim git openstack-packstack httpd iptables-services libvirt ntfs-utils &
+    yum update -y && yum install -y https://rdo.fedorapeople.org/rdo-release.rpm && yum install -y tmux vim git openstack-packstack httpd iptables-services &
     for i in 1 2 3; do                                                                                                                                                                        
         ssh -t root@${COMPUTE[$i]} "yum update -y" &
     done
@@ -128,9 +128,17 @@ packstack_install()
 
     # Habilitando live migration
 
-    yum -y install libvirt ntfs-utils nfs4-acl-tools portmap
+    yum -y install libvirt ntfs-utils nfs4-acl-tools
+
+
+    #libvirt conf
+
+    sed -i "s/#listen_tcp = 1/listen_tcp = 1/" /etc/libvirt/libvirtd.conf
+    sed -i "s/#listen_tls = 0/listen_tls = 0/" /etc/libvirt/libvirtd.conf
+    sed -i "s/#auth_tcp = \"sasl\"/auth_tcp = \"none\"/" /etc/libvirt/libvirtd.conf
 
     echo "/var/lib/nova/instances 10.0.10.0/24(rw,sync,fsid=0,no_root_squash)" > /etc/exports
+    echo "controller:/ /var/lib/nova/instances nfs4 defaults 0 0" >> /etc/fstab
 
     systemctl enable nfs-server && systemctl start nfs-server
     systemctl disable iptables && systemctl stop iptables
@@ -187,6 +195,7 @@ EOF
     done
     wait
 
+    systemctl restart mysqld && systemctl restart mariadb
 }
 
 #############################################################################################################
