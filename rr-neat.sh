@@ -56,7 +56,7 @@ preconfigure() {
 
     # Se o /etc/hosts já foi modificado, não adiciona os demais hosts
     if ! grep -q "compute01" /etc/hosts; then
-        sed -i "\$a# controller\n$CONTROLLER      controller\n\n# compute01\n${COMPUTE[1]}    compute01\n${COMPUTE[1]}    compute01.novalocal\n\n# compute02\n${COMPUTE[2]}     compute02\n${COMPUTE[2]}     compute02.novalocal\n\n# compute03\n${COMPUTE[3]}     compute03\n${COMPUTE[3]}     compute03.novalocal" /etc/hosts
+        sed -i "\$a# controller\n$CONTROLLER	controller\n\n# compute01\n${COMPUTE[1]}    compute01\n\n# compute02\n${COMPUTE[2]}	    compute02\n\n# compute03\n${COMPUTE[3]}	    compute03" /etc/hosts
     fi
 
     # Permite o acesso ssh através do usuário root
@@ -77,7 +77,7 @@ preconfigure() {
     sudo cp /home/centos/ifcfg-eth1 /etc/sysconfig/network-scripts/
     sudo sed -i "s/CHANGEIP/10.0.10.1${i}/" /etc/sysconfig/network-scripts/ifcfg-eth1
     if ! grep -q 'compute01' /etc/hosts; then
-        sudo sed -i '\$a# controller\n$CONTROLLER      controller\n\n# compute01\n${COMPUTE[1]}    compute01\n${COMPUTE[1]}    compute01.novalocal\n\n# compute02\n${COMPUTE[2]}     compute02\n${COMPUTE[2]}     compute02.novalocal\n\n# compute03\n${COMPUTE[3]}     compute03\n${COMPUTE[3]}     compute03.novalocal' /etc/hosts
+        sudo sed -i '\$a# controller\n$CONTROLLER	controller\n\n# compute01\n${COMPUTE[1]}    compute01\n\n# compute02\n${COMPUTE[2]}	    compute02\n\n# compute03\n${COMPUTE[3]}	    compute03' /etc/hosts
     fi
     yes | sudo cp -i /home/centos/.ssh/authorized_keys /root/.ssh/authorized_keys
     sudo systemctl restart network
@@ -114,9 +114,29 @@ packstack_install()
     systemctl enable iptables && systemctl start iptables
 
     ## Instalando openstack
-    ## ESTIMATIVA: 20~30min
+    ## ESTIMATIVA: 30min
 
     packstack --answer-file=$ANSWERFILE
+
+}
+
+pospackstack()
+{
+
+    # Mudando o hostname dos compute nodes para, respectivamente, compute01, compute02 e compute03.
+    # Necessário para configuração do openstack-neat
+   
+    for i in 1 2 3
+    do
+        sed -i "/set_hostname/d" /etc/cloud/cloud.cfg
+        sed -i "/update_hostname/d" /etc/cloud/cloud.cfg
+        sed -i "/update_etc_hosts/d" /etc/cloud/cloud.cfg
+        sed -i "1 s/^.*$/compute0$i/g" /etc/hostname
+        sed -i "s/vncserver_proxyclient_address.*/vncserver_proxyclient_address=compute0$i/g" /etc/nova/nova.conf
+        systemctl restart openstack-nova-compute libvirtd
+    done
+
+    systemctl restart openstack-nova-api
 
     ## Alterações packstack pós instalação
 
@@ -126,19 +146,26 @@ packstack_install()
     ssh-keygen -t rsa -b 2048 -N '' -f /root/.ssh/demokey
     nova keypair-add --pub-key /root/.ssh/demokey.pub demokey
 
-    # Habilitando live migration
+    # >> Habilitando live migration
 
     yum -y install libvirt ntfs-utils nfs4-acl-tools
-
 
     #libvirt conf
 
     sed -i "s/#listen_tcp = 1/listen_tcp = 1/" /etc/libvirt/libvirtd.conf
     sed -i "s/#listen_tls = 0/listen_tls = 0/" /etc/libvirt/libvirtd.conf
     sed -i "s/#auth_tcp = \"sasl\"/auth_tcp = \"none\"/" /etc/libvirt/libvirtd.conf
+    sed -i '/#LIBVIRTD_ARGS="--listen"/c\LIBVIRTD_ARGS="--listen"' /etc/sysconfig/libvirtd
 
-    echo "/var/lib/nova/instances 10.0.10.0/24(rw,sync,fsid=0,no_root_squash)" > /etc/exports
-    echo "controller:/ /var/lib/nova/instances nfs4 defaults 0 0" >> /etc/fstab
+    if ! grep -q "controller" /etc/fstab; then
+        echo "controller:/ /var/lib/nova/instances nfs4 defaults 0 0" >> /etc/fstab
+    fi
+
+    cidr=$(echo $CONTROLLER | cut -d "." -f 1,2,3).0/24
+
+    if ! grep -q "/var/lib/nova" /etc/fstab; then
+        echo "/var/lib/nova/instances $cidr(rw,sync,fsid=0,no_root_squash)" > /etc/exports
+    fi
 
     systemctl enable nfs-server && systemctl start nfs-server
     systemctl disable iptables && systemctl stop iptables
@@ -190,7 +217,8 @@ EOF
     
     # openstack-neat deps
     bash /root/openstack-neat/setup/deps-centos.sh &
-    for i in 1 2 3; do                               
+    for i in 1 2 3
+    do                               
         ssh -t root@${COMPUTE[$i]} "bash /root/openstack-neat/setup/deps-centos.sh" &
     done
     wait
@@ -204,4 +232,5 @@ EOF
     
 preconfigure
 packstack_install
+pospackstack
 neat_install
