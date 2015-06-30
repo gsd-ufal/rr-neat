@@ -112,6 +112,15 @@ preconfigure() {
                 sed -i '1 s/^.*$/compute0$i/g' /etc/hostname
         "
     done
+    
+    # localtime
+
+    ln -sf /usr/share/zoneinfo/Brazil/East /etc/localtime
+
+    for i in 1 2 3
+    do
+        ssh root@${COMPUTE[$i]} "ln -sf /usr/share/zoneinfo/Brazil/East /etc/localtime"
+    done
 
 }
 
@@ -123,14 +132,6 @@ preconfigure() {
 
 packstack_install()
 {
-    # localtime
-
-    ln -sf /usr/share/zoneinfo/Brazil/East /etc/localtime
-
-    for i in 1 2 3
-    do
-        ssh root@${COMPUTE[$i]} "ln -sf /usr/share/zoneinfo/Brazil/East /etc/localtime"
-    done
 
     # answerfile
 
