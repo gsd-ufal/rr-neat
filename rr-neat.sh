@@ -91,6 +91,28 @@ preconfigure() {
         ssh -t root@${COMPUTE[$i]} "yum update -y" &
     done
     wait
+    
+    # Mudando o hostname dos compute nodes para, respectivamente, compute01, compute02 e compute03.
+
+    # alterando controller hostname
+
+    sed -i '/set_hostname/d' /etc/cloud/cloud.cfg
+    sed -i '/update_hostname/d' /etc/cloud/cloud.cfg
+    sed -i '/update_etc_hosts/d' /etc/cloud/cloud.cfg
+    sed -i '1 s/^.*$/controller/g' /etc/hostname
+
+    # alterando computes hostnames
+
+    for i in 1 2 3
+    do
+        ssh -t -i mycloud.pem root@${COMPUTE[$i]} "
+                sed -i '/set_hostname/d' /etc/cloud/cloud.cfg
+                sed -i '/update_hostname/d' /etc/cloud/cloud.cfg
+                sed -i '/update_etc_hosts/d' /etc/cloud/cloud.cfg
+                sed -i '1 s/^.*$/compute0$i/g' /etc/hostname
+        "
+    done
+
 }
 
 #############################################################################################################
@@ -101,8 +123,19 @@ preconfigure() {
 
 packstack_install()
 {
+    # localtime
+
+    ln -sf /usr/share/zoneinfo/Brazil/East /etc/localtime
+
+    for i in 1 2 3
+    do
+        ssh root@${COMPUTE[$i]} "ln -sf /usr/share/zoneinfo/Brazil/East /etc/localtime"
+    done
+
+    # answerfile
 
     yes | cp -i answerfile-modelo answerfile
+
     sed -i "s/controllerhost/${CONTROLLER}/" answerfile
     for i in 1 2 3
     do
@@ -122,21 +155,6 @@ packstack_install()
 
 pospackstack()
 {
-
-    # Mudando o hostname dos compute nodes para, respectivamente, compute01, compute02 e compute03.
-    # Necessário para configuração do openstack-neat
-   
-    for i in 1 2 3
-    do
-        sed -i "/set_hostname/d" /etc/cloud/cloud.cfg
-        sed -i "/update_hostname/d" /etc/cloud/cloud.cfg
-        sed -i "/update_etc_hosts/d" /etc/cloud/cloud.cfg
-        sed -i "1 s/^.*$/compute0$i/g" /etc/hostname
-        sed -i "s/vncserver_proxyclient_address.*/vncserver_proxyclient_address=compute0$i/g" /etc/nova/nova.conf
-        systemctl restart openstack-nova-compute libvirtd
-    done
-
-    systemctl restart openstack-nova-api
 
     ## Alterações packstack pós instalação
 
