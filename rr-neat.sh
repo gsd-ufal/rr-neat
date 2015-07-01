@@ -162,8 +162,8 @@ pospackstack()
     source /root/keystonerc_admin
 
     # Criando chave publica para o Nova
-    ssh-keygen -t rsa -b 2048 -N '' -f /root/.ssh/demokey
-    nova keypair-add --pub-key /root/.ssh/demokey.pub demokey
+    ssh-keygen -t rsa -b 2048 -N '' -f /root/.ssh/test
+    nova keypair-add --pub-key /root/.ssh/test.pub test
 
     # >> Habilitando live migration
 
@@ -176,9 +176,20 @@ pospackstack()
     sed -i "s/#auth_tcp = \"sasl\"/auth_tcp = \"none\"/" /etc/libvirt/libvirtd.conf
     sed -i '/#LIBVIRTD_ARGS="--listen"/c\LIBVIRTD_ARGS="--listen"' /etc/sysconfig/libvirtd
 
-    if ! grep -q "controller" /etc/fstab; then
-        echo "controller:/ /var/lib/nova/instances nfs4 defaults 0 0" >> /etc/fstab
-    fi
+   # iptables rules para libvirt/nfs
+
+    cd $DIR
+    head -n -2 /etc/sysconfig/iptables > /etc/sysconfig/iptables.new && mv /etc/sysconfig/iptables.new /etc/sysconfig/iptables
+    echo "$(cat iptables-rules)" >> /etc/sysconfig/iptables
+
+    systemctl restart iptables
+
+    # montando volume externo para shared storage 
+
+    mkfs.ext4 /dev/disk/by-id/virtio-*
+    mkdir -p /var/lib/nova/instances
+    mount /dev/disk/by-id/virtio-* /var/lib/nova/instances/
+    chown nova:nova /var/lib/nova/instances
 
     cidr=$(echo $CONTROLLER | cut -d "." -f 1,2,3).0/24
 
@@ -187,14 +198,13 @@ pospackstack()
     fi
 
     systemctl enable nfs-server && systemctl start nfs-server
-    systemctl disable iptables && systemctl stop iptables
 
     for i in 1 2 3
     do
         ssh root@${COMPUTE[$i]} "
         chmod o+x /var/lib/nova/instances
-        echo "controller:/ /var/lib/nova/instances nfs4 defaults 0 0" >> /etc/fstab
         sed -i '/live_migration_flag/c\live_migration_flag=VIR_MIGRATE_UNDEFINE_SOURCE, VIR_MIGRATE_PEER2PEER, VIR_MIGRATE_LIVE, VIR_MIGRATE_TUNNELLED' /etc/nova/nova.conf
+        mount -o hard,intr,noatime controller:/ /var/lib/nova/instances
         "
     done
 
