@@ -220,7 +220,7 @@ pospackstack()
 neat_install()
 {
 
-    cd /root && git clone https://github.com/beloglazov/openstack-neat.git
+    cd /root && git clone https://github.com/raphapr/openstack-neat.git
 
     # modificando neat.conf
     sed -i "s/neatpassword/noitosfera/" /root/openstack-neat/neat.conf

@@ -21,3 +21,7 @@
 - Copie o arquivo .pem do controller para a pasta atual e a renomeie para "mycloud.pem"
 - Edite os endereços IPs dos respectivos compute nodes no arquivo rr-neat.sh
 - Execute o script: chmod +x rr-neat.sh && ./rr-neat.sh
+
+## Problemas relatados:
+
+- O volume do Cinder anexado às máquinas virtuais estava impedindo, de alguma forma, o CentOS de montar a partição /sysroot
